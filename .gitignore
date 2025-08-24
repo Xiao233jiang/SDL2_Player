@@ -1,0 +1,9 @@
+build/
+msvc-build/
+.vscode/
+.cache/
+third_party/
+data/
+other-proj/
+learn-src/
+DOCX/
