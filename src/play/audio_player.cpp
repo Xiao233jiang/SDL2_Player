@@ -77,7 +77,7 @@ void AudioPlayer::pause(bool paused)
 
 double AudioPlayer::getAudioClock() const
 {
-    return audio_clock_.load();
+    return state_->audio_clock.get();
 }
 
 void AudioPlayer::audioCallback(void* userdata, Uint8* stream, int len) 
@@ -99,7 +99,7 @@ void AudioPlayer::fillAudioBuffer(Uint8* stream, int len)
     while (len > 0 && !state_->quit.load()) {
         if (audio_buf_index_ >= audio_buf_size_) {
             // 需要获取更多数据
-            audio_size = audioDecodeFrame(audio_buf_, sizeof(audio_buf_));
+            audio_size = audioProcessFrame(audio_buf_, sizeof(audio_buf_));
             
             if (audio_size < 0) {
                 // 出错时输出静音
@@ -123,37 +123,80 @@ void AudioPlayer::fillAudioBuffer(Uint8* stream, int len)
     }
 }
 
-int AudioPlayer::audioDecodeFrame(uint8_t* audio_buf, int buf_size) 
+int AudioPlayer::audioProcessFrame(uint8_t* audio_buf, int buf_size) 
 {
-    if (state_->quit.load()) {
+    if (state_->quit.load()) 
+    {
         return -1;
     }
 
     AVFrame* frame = nullptr;
+    if (!state_->audio_frame_queue.pop(frame, state_->quit, 10)) 
+    {
+        return -1; // 超时或退出
+    }
     
-    // 从音频帧队列获取帧
-    if (!state_->audio_frame_queue.pop(frame, state_->quit, 10)) {
-        return -1;
+    // 添加安全检查 - 确保frame和音频上下文有效
+    if (!frame || !state_->audio_ctx || state_->audio_ctx->sample_rate <= 0) {
+        if (frame) av_frame_free(&frame);
+        memset(audio_buf, 0, buf_size);
+        return buf_size; // 返回静音
     }
 
-    // 更新时间戳
-    if (frame->pts != AV_NOPTS_VALUE) {
-        double pts = frame->pts * av_q2d(state_->audio_ctx->time_base);
-        audio_clock_.store(pts);
-        state_->update_audio_clock(pts, 0);
+    double pts = NAN;
+    if (frame->pts != AV_NOPTS_VALUE) 
+    {
+        pts = frame->pts * av_q2d(state_->audio_ctx->time_base);
     }
 
-    // 重采样音频
+    // 检查帧是否有有效的样本数
+    if (frame->nb_samples <= 0) {
+        av_frame_free(&frame);
+        memset(audio_buf, 0, buf_size);
+        return buf_size; // 返回静音
+    }
+
+    // 保存样本数，因为frame将在重采样后被释放
+    int nb_samples = frame->nb_samples;
+    
     uint8_t* resampled_buf = nullptr;
     int data_size = resampler_.resample(frame, &resampled_buf);
-    
-    if (data_size > 0 && data_size <= buf_size) {
-        memcpy(audio_buf, resampled_buf, data_size);
-        av_freep(&resampled_buf);
-    } else {
-        data_size = -1;
+    av_frame_free(&frame); // 尽早释放 frame
+
+    if (data_size <= 0) 
+    {
+        if (resampled_buf) 
+        {
+            av_freep(&resampled_buf);
+        }
+        // 返回静音
+        memset(audio_buf, 0, buf_size);
+        return buf_size;
     }
 
-    av_frame_free(&frame);
+    if (data_size > buf_size) 
+    {
+        // 日志警告，但尽量拷贝有效部分
+        data_size = buf_size;
+    }
+
+    memcpy(audio_buf, resampled_buf, data_size);
+    av_freep(&resampled_buf);
+
+    // 更新时间戳和统计信息
+    if (!std::isnan(pts)) 
+    {
+        // 计算音频持续时间 - 使用之前保存的样本数
+        double duration = 0.0;
+        if (state_->audio_ctx->sample_rate > 0) {
+            duration = (double)nb_samples / (double)state_->audio_ctx->sample_rate;
+        }
+        
+        // 更新音频时钟 - 使用 Clock 类
+        state_->audio_clock.set(pts + duration);
+        // 更新统计信息
+        state_->stats.audio_bytes.fetch_add(data_size);
+    }
+
     return data_size;
 }

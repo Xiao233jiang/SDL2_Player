@@ -8,6 +8,7 @@
 #include <SDL2/SDL.h>
 #include "utils/safe_queue.hpp"
 #include "utils/player_constants.hpp"
+#include "../play/clock.hpp"
 #include "../ffmpeg_utils/ffmpeg_headers.hpp"
 
 /**
@@ -92,10 +93,11 @@ public:
         }
     } stats;
 
+    // 时钟管理
+    Clock audio_clock;
+    Clock video_clock;
+
     // 时间同步
-    std::atomic<double> audio_clock{0};
-    std::atomic<double> video_clock{0};
-    std::atomic<double> master_clock{0};
     std::mutex clock_mutex;
 
     // 线程管理

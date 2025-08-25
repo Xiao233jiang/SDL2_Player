@@ -125,6 +125,24 @@ void Renderer::renderFrame(const AVFrame* frame)
 {
     if (!renderer_ || !texture_ || !frame) return;
     
+    // 获取PTS（秒）
+    double pts = NAN;
+    if (frame->opaque) 
+    {
+        pts = *((double*)frame->opaque);
+    } 
+    else if (frame->pts != AV_NOPTS_VALUE) 
+    {
+        AVStream* stream = state_->fmt_ctx->streams[state_->video_stream];
+        pts = frame->pts * av_q2d(stream->time_base);
+    }
+    
+    // 更新视频时钟 - 使用 Clock 类
+    if (!std::isnan(pts)) 
+    {
+        state_->video_clock.set(pts);
+    }
+    
     if (sws_ctx_) 
     {
         // 需要格式转换
@@ -169,25 +187,6 @@ void Renderer::renderFrame(const AVFrame* frame)
     // 渲染到计算好的区域
     SDL_RenderCopy(renderer_, texture_, nullptr, &dst_rect);
     SDL_RenderPresent(renderer_);
-    
-    // 更新视频时钟 - 修复时间戳计算
-    double pts;
-    if (frame->pts != AV_NOPTS_VALUE) 
-    {
-        // 使用视频流的时间基准
-        AVStream* stream = state_->fmt_ctx->streams[state_->video_stream];
-        pts = frame->pts * av_q2d(stream->time_base);
-    } 
-    else 
-    {
-        // 如果没有PTS，基于帧率估算
-        static double video_clock = 0;
-        AVStream* stream = state_->fmt_ctx->streams[state_->video_stream];
-        double frame_duration = 1.0 / av_q2d(av_guess_frame_rate(state_->fmt_ctx, stream, nullptr));
-        pts = video_clock;
-        video_clock += frame_duration;
-    }
-    state_->update_video_clock(pts);
 }
 
 void Renderer::clear() 

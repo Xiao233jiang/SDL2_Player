@@ -7,8 +7,8 @@ extern "C" {
     #include <libavcodec/avcodec.h>
 }
 
-#include "../player_core/decode/audio_decode.hpp"
-#include "../player_core/decode/video_decode.hpp"
+#include "player_core/decode/audio_decode.hpp"
+#include "player_core/decode/video_decode.hpp"
 
 PlayerApp::PlayerApp(const std::string& filename) {
     state_.filename = filename;
@@ -26,6 +26,10 @@ bool PlayerApp::init() {
         std::cerr << "SDL初始化失败: " << SDL_GetError() << std::endl;
         return false;
     }
+
+    // 初始化时钟
+    state_.audio_clock.set(0);
+    state_.video_clock.set(0);
     
     // 创建解封装线程
     demux_thread_ = std::make_unique<DemuxThread>(&state_);
@@ -93,6 +97,12 @@ bool PlayerApp::setupAudio() {
     // 打开解码器
     if (avcodec_open2(state_.audio_ctx, codec, nullptr) < 0) {
         std::cerr << "无法打开音频编解码器" << std::endl;
+        return false;
+    }
+
+    // 在创建音频播放器之前，确保音频上下文有效
+    if (!state_.audio_ctx || state_.audio_ctx->sample_rate <= 0) {
+        std::cerr << "无效的音频编解码器上下文" << std::endl;
         return false;
     }
     

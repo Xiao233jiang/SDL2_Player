@@ -4,7 +4,7 @@
 #include <atomic>
 #include "../ffmpeg_utils/ffmpeg_headers.hpp"
 #include "../player_core/player_state.hpp"
-#include "../player_core/audio_resampler.hpp"
+#include "audio_resampler.hpp"
 
 class AudioPlayer {
 public:
@@ -21,7 +21,7 @@ public:
 private:
     static void audioCallback(void* userdata, Uint8* stream, int len);
     void fillAudioBuffer(Uint8* stream, int len);
-    int audioDecodeFrame(uint8_t* audio_buf, int buf_size);
+    int audioProcessFrame(uint8_t* audio_buf, int buf_size);
     
     PlayerState* state_;
     SDL_AudioDeviceID dev_id_ = 0;

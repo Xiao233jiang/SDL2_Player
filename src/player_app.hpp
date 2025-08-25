@@ -5,12 +5,12 @@
 #include <memory>
 #include <atomic>
 
-#include "../player_core/player_state.hpp"
-#include "audio_player.hpp"
-#include "../renderer/renderer.hpp"
-#include "demux_thread.hpp"
-#include "decode_thread.hpp"
-#include "video_refresh_timer.hpp"
+#include "player_core/player_state.hpp"
+#include "play/audio_player.hpp"
+#include "play/renderer.hpp"
+#include "player_thread/demux_thread.hpp"
+#include "player_thread/decode_thread.hpp"
+#include "player_thread/video_refresh_timer.hpp"
 
 class PlayerApp {
 public:

@@ -112,32 +112,43 @@ void DecodeThread<Decoder, PacketQueue, FrameQueue>::run()
             frame_count++;
             
             // 处理时间戳
-            if (frame->pts == AV_NOPTS_VALUE) {
-                if (pkt.pts != AV_NOPTS_VALUE) {
+            if (frame->pts == AV_NOPTS_VALUE) 
+            {
+                if (pkt.pts != AV_NOPTS_VALUE) 
+                {
                     frame->pts = av_rescale_q(pkt.pts, stream->time_base, 
                                             decoder_->getCodecCtx()->time_base);
-                } else if (pkt.dts != AV_NOPTS_VALUE) {
+                } 
+                else if (pkt.dts != AV_NOPTS_VALUE) 
+                {
                     frame->pts = av_rescale_q(pkt.dts, stream->time_base, 
                                             decoder_->getCodecCtx()->time_base);
-                } else {
+                } 
+                else 
+                {
                     // 生成基于帧数的时间戳
                     frame->pts = frame_number;
-                    if (is_audio) {
+                    if (is_audio) 
+                    {
                         frame_number += frame->nb_samples;
-                    } else {
+                    } 
+                    else 
+                    {
                         frame_number++;
                     }
                 }
             }
             
             // 特别处理音频帧的时间戳
-            if (is_audio) {
+            if (is_audio) 
+            {
                 // 计算时间戳（以秒为单位）
                 double pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : 
                             frame->pts * av_q2d(decoder_->getCodecCtx()->time_base);
                 
                 // 对于音频帧，我们需要确保时间戳是有效的
-                if (std::isnan(pts)) {
+                if (std::isnan(pts)) 
+                {
                     // 如果没有有效时间戳，使用基于样本数的估计
                     pts = frame_number * av_q2d(decoder_->getCodecCtx()->time_base);
                 }
@@ -148,18 +159,34 @@ void DecodeThread<Decoder, PacketQueue, FrameQueue>::run()
                 // 更新帧计数器
                 frame_number += frame->nb_samples;
             }
+            else 
+            {
+                // 对于视频帧，保存PTS到opaque字段
+                double* pts_ptr = (double*)av_malloc(sizeof(double));
+                AVStream* stream = state_->fmt_ctx->streams[state_->video_stream];
+                *pts_ptr = (frame->pts == AV_NOPTS_VALUE) ? NAN : 
+                        frame->pts * av_q2d(stream->time_base);
+                frame->opaque = pts_ptr;
+            }
 
             // 克隆帧并放入队列
             AVFrame* cloned_frame = av_frame_clone(frame);
-            if (cloned_frame) {
-                if (!frame_queue_->push(cloned_frame, true, 100)) {
+            if (cloned_frame) 
+            {
+                if (!frame_queue_->push(cloned_frame, true, 100)) 
+                {
                     std::cout << name_ << ": Frame queue full, dropping frame" << std::endl;
                     av_frame_free(&cloned_frame);
-                } else {
+                } 
+                else 
+                {
                     // 更新统计信息
-                    if (is_audio) {
+                    if (is_audio) 
+                    {
                         state_->stats.audio_frames++;
-                    } else {
+                    } 
+                    else 
+                    {
                         state_->stats.video_frames++;
                     }
                 }

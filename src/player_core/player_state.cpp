@@ -1,5 +1,6 @@
 #include "player_state.hpp"
 #include <iostream>
+#include <thread>
 
 extern "C" {
 #include <libavutil/frame.h>
@@ -25,6 +26,12 @@ void PlayerState::clear()
 {
     // 设置退出标志
     quit.store(true);
+
+    // 先停止所有音频相关操作
+    if (audio_ctx) {
+        // 等待音频处理完成
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
     
     // 通知所有等待的线程
     demux_ready_cv.notify_all();
@@ -87,10 +94,9 @@ void PlayerState::clear()
     // 重置统计信息
     stats.reset();
     
-    // 重置时钟
-    audio_clock.store(0);
-    video_clock.store(0);
-    master_clock.store(0);
+    // 重置时钟 - 使用 Clock 类的 set 方法
+    audio_clock.set(0);
+    video_clock.set(0);
 }
 
 void PlayerState::set_error(PlayerError err, const std::string& msg) 
@@ -125,23 +131,21 @@ void PlayerState::thread_finished()
 
 void PlayerState::update_audio_clock(double pts, int data_size) 
 {
-    std::lock_guard<std::mutex> lock(clock_mutex);
-    audio_clock.store(pts);
+    // 不再使用原子变量，而是使用 Clock 类
+    audio_clock.set(pts);
     if (data_size > 0) {
         stats.audio_bytes.fetch_add(data_size);
     }
-    // 音频时钟通常作为主时钟
-    master_clock.store(pts);
 }
 
 void PlayerState::update_video_clock(double pts) 
 {
-    std::lock_guard<std::mutex> lock(clock_mutex);
-    video_clock.store(pts);
+    // 不再使用原子变量，而是使用 Clock 类
+    video_clock.set(pts);
 }
 
 double PlayerState::get_master_clock() 
 {
-    std::lock_guard<std::mutex> lock(clock_mutex);
-    return master_clock.load();
+    // 返回音频时钟的值作为主时钟
+    return audio_clock.get();
 }

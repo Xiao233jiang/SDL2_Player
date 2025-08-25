@@ -41,16 +41,30 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/include
 
     ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/src/core
-    ${CMAKE_SOURCE_DIR}/src/tool
 )
 
 # 添加源代码
 set(SOURCES 
-    # "${CMAKE_SOURCE_DIR}/main.cpp"
-    "${CMAKE_SOURCE_DIR}/src/app.cpp"
+    "${CMAKE_SOURCE_DIR}/main.cpp"
 
-    "${CMAKE_SOURCE_DIR}/src/ffmpeg_utils/ffmpeg_headers.hpp"
+    "${CMAKE_SOURCE_DIR}/src/player_app.hpp"
+    "${CMAKE_SOURCE_DIR}/src/player_app.cpp"
+
+    "${CMAKE_SOURCE_DIR}/src/play/renderer.hpp"
+    "${CMAKE_SOURCE_DIR}/src/play/renderer.cpp"
+    "${CMAKE_SOURCE_DIR}/src/play/audio_player.hpp"
+    "${CMAKE_SOURCE_DIR}/src/play/audio_player.cpp"
+    "${CMAKE_SOURCE_DIR}/src/play/audio_resampler.hpp"
+    "${CMAKE_SOURCE_DIR}/src/play/audio_resampler.cpp"
+
+    "${CMAKE_SOURCE_DIR}/src/player_thread/decode_thread.hpp"
+    "${CMAKE_SOURCE_DIR}/src/player_thread/decode_thread.cpp"
+    "${CMAKE_SOURCE_DIR}/src/player_thread/demux_thread.hpp"
+    "${CMAKE_SOURCE_DIR}/src/player_thread/demux_thread.cpp"
+    "${CMAKE_SOURCE_DIR}/src/player_thread/video_refresh_timer.hpp"
+    "${CMAKE_SOURCE_DIR}/src/player_thread/video_refresh_timer.cpp"
+    "${CMAKE_SOURCE_DIR}/src/player_thread/thread_utils.hpp"
+    "${CMAKE_SOURCE_DIR}/src/player_thread/thread_utils.cpp"
 
     "${CMAKE_SOURCE_DIR}/src/player_core/demux.hpp"
     "${CMAKE_SOURCE_DIR}/src/player_core/demux.cpp"
@@ -58,8 +72,6 @@ set(SOURCES
     "${CMAKE_SOURCE_DIR}/src/player_core/decode.cpp"
     "${CMAKE_SOURCE_DIR}/src/player_core/player_state.hpp"
     "${CMAKE_SOURCE_DIR}/src/player_core/player_state.cpp"
-    "${CMAKE_SOURCE_DIR}/src/player_core/audio_resampler.hpp"
-    "${CMAKE_SOURCE_DIR}/src/player_core/audio_resampler.cpp"
 
     "${CMAKE_SOURCE_DIR}/src/player_core/decode/audio_decode.hpp"
     "${CMAKE_SOURCE_DIR}/src/player_core/decode/audio_decode.cpp"
@@ -71,22 +83,7 @@ set(SOURCES
     "${CMAKE_SOURCE_DIR}/src/player_core/utils/timestamp_utils.hpp"
     "${CMAKE_SOURCE_DIR}/src/player_core/utils/timestamp_utils.cpp"
 
-    "${CMAKE_SOURCE_DIR}/src/player_thread/audio_player.hpp"
-    "${CMAKE_SOURCE_DIR}/src/player_thread/audio_player.cpp"
-    "${CMAKE_SOURCE_DIR}/src/player_thread/decode_thread.hpp"
-    "${CMAKE_SOURCE_DIR}/src/player_thread/decode_thread.cpp"
-    "${CMAKE_SOURCE_DIR}/src/player_thread/demux_thread.hpp"
-    "${CMAKE_SOURCE_DIR}/src/player_thread/demux_thread.cpp"
-    "${CMAKE_SOURCE_DIR}/src/player_thread/player_app.hpp"
-    "${CMAKE_SOURCE_DIR}/src/player_thread/player_app.cpp"
-    "${CMAKE_SOURCE_DIR}/src/player_thread/video_refresh_timer.hpp"
-    "${CMAKE_SOURCE_DIR}/src/player_thread/video_refresh_timer.cpp"
-    "${CMAKE_SOURCE_DIR}/src/player_thread/thread_utils.hpp"
-    "${CMAKE_SOURCE_DIR}/src/player_thread/thread_utils.cpp"
-
-    "${CMAKE_SOURCE_DIR}/src/renderer/renderer.hpp"
-    "${CMAKE_SOURCE_DIR}/src/renderer/renderer.cpp"
-
+    "${CMAKE_SOURCE_DIR}/src/ffmpeg_utils/ffmpeg_headers.hpp"
 )
 add_executable(main ${SOURCES} ${GLAD_SRC} ${KISSFFT_SRC})
 
