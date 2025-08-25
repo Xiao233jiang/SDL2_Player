@@ -26,7 +26,8 @@ constexpr int FF_QUIT_EVENT = SDL_USEREVENT + 1;
 constexpr int FF_ERROR_EVENT = SDL_USEREVENT + 2;
 
 // 错误代码
-enum class PlayerError {
+enum class PlayerError 
+{
     NONE,
     DEMUX_FAILED,
     AUDIO_CODEC_NOT_FOUND,

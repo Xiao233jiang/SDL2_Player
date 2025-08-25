@@ -25,7 +25,8 @@ void VideoRefreshTimer::start()
 
 void VideoRefreshTimer::join() 
 {
-    if (thread_.joinable()) {
+    if (thread_.joinable()) 
+    {
         thread_.join();
     }
 }

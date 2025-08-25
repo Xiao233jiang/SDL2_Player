@@ -23,6 +23,10 @@ set(GLAD_PATH "${CMAKE_SOURCE_DIR}/third_party/glad")
 include_directories(${GLAD_PATH}/include)
 set(GLAD_SRC "${GLAD_PATH}/src/glad.c")
 
+# 设置 GLM 路径
+set(GLM_PATH "${CMAKE_SOURCE_DIR}/third_party/glm")
+include_directories(${GLM_PATH})
+
 # 设置 stb_image 路径
 set(STB_PATH "${CMAKE_SOURCE_DIR}/third_party/stb")
 include_directories(${STB_PATH})
@@ -52,6 +56,8 @@ set(SOURCES
 
     "${CMAKE_SOURCE_DIR}/src/play/renderer.hpp"
     "${CMAKE_SOURCE_DIR}/src/play/renderer.cpp"
+    "${CMAKE_SOURCE_DIR}/src/play/opengl_renderer.hpp"
+    "${CMAKE_SOURCE_DIR}/src/play/opengl_renderer.cpp"
     "${CMAKE_SOURCE_DIR}/src/play/audio_player.hpp"
     "${CMAKE_SOURCE_DIR}/src/play/audio_player.cpp"
     "${CMAKE_SOURCE_DIR}/src/play/audio_resampler.hpp"

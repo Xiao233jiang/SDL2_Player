@@ -10,16 +10,19 @@ class Clock {
 public:
     Clock() = default;
     
-    void set(double pts, double time) {
+    void set(double pts, double time) 
+    {
         pts_.store(pts);
         last_updated_.store(time);
     }
     
-    void set(double pts) {
+    void set(double pts) 
+    {
         set(pts, currentTime());
     }
     
-    double get() const {
+    double get() const 
+    {
         double time = currentTime();
         return pts_.load() + (time - last_updated_.load());
     }
@@ -34,7 +37,8 @@ public:
     double getPreFrameDelay() const { return pre_frame_delay_.load(); }
 
 private:
-    static double currentTime() {
+    static double currentTime() 
+    {
         // 使用系统时间，单位秒
         return static_cast<double>(av_gettime()) / 1000000.0;
     }

@@ -21,12 +21,15 @@ public:
     {
         std::unique_lock<std::mutex> lock(mutex_);
         
-        if (max_size_ > 0 && queue_.size() >= max_size_) {
-            if (!blocking) {
+        if (max_size_ > 0 && queue_.size() >= max_size_) 
+        {
+            if (!blocking) 
+            {
                 return false; // 非阻塞模式直接返回失败
             }
             if (!cond_not_full_.wait_for(lock, std::chrono::milliseconds(timeout_ms),
-                [this]() { return queue_.size() < max_size_ || quit_.load(); })) {
+                [this]() { return queue_.size() < max_size_ || quit_.load(); })) 
+            {
                 return false; // 超时返回失败
             }
         }
@@ -45,7 +48,8 @@ public:
         std::unique_lock<std::mutex> lock(mutex_);
         
         if (!cond_not_empty_.wait_for(lock, std::chrono::milliseconds(timeout_ms),
-            [this, &quit]() { return !queue_.empty() || quit.load() || quit_.load(); })) {
+            [this, &quit]() { return !queue_.empty() || quit.load() || quit_.load(); })) 
+        {
             return false;
         }
         
@@ -54,7 +58,8 @@ public:
         item = std::move(queue_.front());
         queue_.pop();
         
-        if (max_size_ > 0) {
+        if (max_size_ > 0) 
+        {
             lock.unlock();
             cond_not_full_.notify_one();
         }
@@ -69,7 +74,8 @@ public:
         value = std::move(queue_.front());
         queue_.pop();
         
-        if (max_size_ > 0) {
+        if (max_size_ > 0) 
+        {
             cond_not_full_.notify_one();
         }
         return true;
@@ -96,9 +102,12 @@ public:
         while (!queue_.empty()) 
         {
             T item = std::move(queue_.front());
-            if (cleanup_func_) {
+            if (cleanup_func_) 
+            {
                 cleanup_func_(item);
-            } else {
+            } 
+            else 
+            {
                 default_cleanup(item);
             }
             queue_.pop();
@@ -110,7 +119,8 @@ public:
     void set_quit(bool quit = true) 
     {
         quit_ = quit;
-        if (quit) {
+        if (quit) 
+        {
             cond_not_empty_.notify_all();
             cond_not_full_.notify_all();
         }
@@ -123,9 +133,12 @@ private:
     // 默认清理函数
     void default_cleanup(T& item) 
     {
-        if constexpr (std::is_same_v<T, AVPacket>) {
+        if constexpr (std::is_same_v<T, AVPacket>) 
+        {
             av_packet_unref(&item);
-        } else if constexpr (std::is_same_v<T, AVFrame*>) {
+        } 
+        else if constexpr (std::is_same_v<T, AVFrame*>) 
+        {
             if (item) av_frame_free(&item);
         }
         // 其他类型不需要特殊清理

@@ -27,9 +27,12 @@ void TimestampUtils::copyTimestamps(const AVPacket* pkt, AVFrame* frame,
                                    const AVRational& stream_time_base,
                                    const AVRational& codec_time_base) 
 {
-    if (pkt->pts != AV_NOPTS_VALUE) {
+    if (pkt->pts != AV_NOPTS_VALUE) 
+    {
         frame->pts = rescaleTimestamp(pkt->pts, stream_time_base, codec_time_base);
-    } else if (pkt->dts != AV_NOPTS_VALUE) {
+    } 
+    else if (pkt->dts != AV_NOPTS_VALUE) 
+    {
         frame->pts = rescaleTimestamp(pkt->dts, stream_time_base, codec_time_base);
     }
     // 如果都没有，保持frame->pts为AV_NOPTS_VALUE

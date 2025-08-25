@@ -11,7 +11,8 @@ extern std::mutex g_cout_mutex;
     std::cout << x << std::endl; \
 } while (0)
 
-class ThreadBase {
+class ThreadBase 
+{
 public:
     virtual ~ThreadBase() = default;
     virtual void start() = 0;

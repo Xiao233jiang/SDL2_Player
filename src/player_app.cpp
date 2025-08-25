@@ -1,4 +1,5 @@
 #include "player_app.hpp"
+#include "play/opengl_renderer.hpp"
 #include <iostream>
 #include <memory>
 
@@ -10,19 +11,23 @@ extern "C" {
 #include "player_core/decode/audio_decode.hpp"
 #include "player_core/decode/video_decode.hpp"
 
-PlayerApp::PlayerApp(const std::string& filename) {
+PlayerApp::PlayerApp(const std::string& filename) 
+{
     state_.filename = filename;
 }
 
-PlayerApp::~PlayerApp() {
+PlayerApp::~PlayerApp() 
+{
     stop();
 }
 
-bool PlayerApp::init() {
+bool PlayerApp::init() 
+{
     if (initialized_) return true;
     
     // 初始化SDL
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) != 0) 
+    {
         std::cerr << "SDL初始化失败: " << SDL_GetError() << std::endl;
         return false;
     }
@@ -44,24 +49,28 @@ bool PlayerApp::init() {
     }
     
     // 检查是否有错误
-    if (state_.error != PlayerError::NONE) {
+    if (state_.error != PlayerError::NONE) 
+    {
         std::cerr << "DemuxThread error: " << state_.error_message << std::endl;
         return false;
     }
     
     // 设置音频和视频解码器
-    if (state_.audio_stream >= 0 && !setupAudio()) {
+    if (state_.audio_stream >= 0 && !setupAudio()) 
+    {
         std::cerr << "Failed to setup audio" << std::endl;
         return false;
     }
     
-    if (state_.video_stream >= 0 && !setupVideo()) {
+    if (state_.video_stream >= 0 && !setupVideo()) 
+    {
         std::cerr << "Failed to setup video" << std::endl;
         return false;
     }
     
     // 创建解码线程和刷新定时器
-    if (!createThreads()) {
+    if (!createThreads()) 
+    {
         std::cerr << "Failed to create threads" << std::endl;
         return false;
     }
@@ -70,45 +79,52 @@ bool PlayerApp::init() {
     return true;
 }
 
-bool PlayerApp::setupAudio() {
+bool PlayerApp::setupAudio() 
+{
     AVStream* audio_stream = state_.fmt_ctx->streams[state_.audio_stream];
     AVCodecParameters* codecpar = audio_stream->codecpar;
     
     // 查找解码器
     AVCodec* codec = avcodec_find_decoder(codecpar->codec_id);
-    if (!codec) {
+    if (!codec) 
+    {
         std::cerr << "不支持的音频编解码器" << std::endl;
         return false;
     }
     
     // 分配解码器上下文
     state_.audio_ctx = avcodec_alloc_context3(codec);
-    if (!state_.audio_ctx) {
+    if (!state_.audio_ctx) 
+    {
         std::cerr << "无法分配音频解码器上下文" << std::endl;
         return false;
     }
     
     // 复制参数到解码器上下文
-    if (avcodec_parameters_to_context(state_.audio_ctx, codecpar) < 0) {
+    if (avcodec_parameters_to_context(state_.audio_ctx, codecpar) < 0) 
+    {
         std::cerr << "无法复制参数到音频解码器上下文" << std::endl;
         return false;
     }
     
     // 打开解码器
-    if (avcodec_open2(state_.audio_ctx, codec, nullptr) < 0) {
+    if (avcodec_open2(state_.audio_ctx, codec, nullptr) < 0) 
+    {
         std::cerr << "无法打开音频编解码器" << std::endl;
         return false;
     }
 
     // 在创建音频播放器之前，确保音频上下文有效
-    if (!state_.audio_ctx || state_.audio_ctx->sample_rate <= 0) {
+    if (!state_.audio_ctx || state_.audio_ctx->sample_rate <= 0) 
+    {
         std::cerr << "无效的音频编解码器上下文" << std::endl;
         return false;
     }
     
     // 创建音频播放器 - 适配修改
     audio_player_ = std::make_unique<AudioPlayer>(&state_);
-    if (!audio_player_->open()) {  // 移除参数，使用默认配置
+    if (!audio_player_->open()) 
+    {  // 移除参数，使用默认配置
         std::cerr << "无法打开音频设备" << std::endl;
         return false;
     }
@@ -116,41 +132,48 @@ bool PlayerApp::setupAudio() {
     return true;
 }
 
-bool PlayerApp::setupVideo() {
+bool PlayerApp::setupVideo() 
+{
     AVStream* video_stream = state_.fmt_ctx->streams[state_.video_stream];
     AVCodecParameters* codecpar = video_stream->codecpar;
     
     // 查找解码器
     AVCodec* codec = avcodec_find_decoder(codecpar->codec_id);
-    if (!codec) {
+    if (!codec) 
+    {
         std::cerr << "不支持的视频编解码器" << std::endl;
         return false;
     }
     
     // 分配解码器上下文
     state_.video_ctx = avcodec_alloc_context3(codec);
-    if (!state_.video_ctx) {
+    if (!state_.video_ctx) 
+    {
         std::cerr << "无法分配视频解码器上下文" << std::endl;
         return false;
     }
     
     // 复制参数到解码器上下文
-    if (avcodec_parameters_to_context(state_.video_ctx, codecpar) < 0) {
+    if (avcodec_parameters_to_context(state_.video_ctx, codecpar) < 0) 
+    {
         std::cerr << "无法复制参数到视频解码器上下文" << std::endl;
         return false;
     }
     
     // 打开解码器
-    if (avcodec_open2(state_.video_ctx, codec, nullptr) < 0) {
+    if (avcodec_open2(state_.video_ctx, codec, nullptr) < 0) 
+    {
         std::cerr << "无法打开视频编解码器" << std::endl;
         return false;
     }
     
     // 创建渲染器
-    renderer_ = std::make_unique<Renderer>(&state_);
+    // renderer_ = std::make_unique<Renderer>(&state_);
+    renderer_ = std::make_unique<OpenGLRenderer>(&state_);
     if (!renderer_->init(state_.video_ctx->width, 
                        state_.video_ctx->height, 
-                       state_.video_ctx->pix_fmt)) {
+                       state_.video_ctx->pix_fmt)) 
+    {
         std::cerr << "无法初始化视频渲染器" << std::endl;
         return false;
     }
@@ -158,9 +181,11 @@ bool PlayerApp::setupVideo() {
     return true;
 }
 
-bool PlayerApp::createThreads() {
+bool PlayerApp::createThreads() 
+{
     // 创建音频解码线程
-    if (state_.audio_stream >= 0) {
+    if (state_.audio_stream >= 0) 
+    {
         auto audio_decoder = std::make_unique<AudioDecode>(state_.audio_ctx);
         audio_decode_thread_ = std::make_unique<AudioDecodeThread>(
             audio_decoder.release(), 
@@ -172,7 +197,8 @@ bool PlayerApp::createThreads() {
     }
     
     // 创建视频解码线程
-    if (state_.video_stream >= 0) {
+    if (state_.video_stream >= 0) 
+    {
         auto video_decoder = std::make_unique<VideoDecode>(state_.video_ctx);
         video_decode_thread_ = std::make_unique<VideoDecodeThread>(
             video_decoder.release(), 
@@ -189,29 +215,35 @@ bool PlayerApp::createThreads() {
     return true;
 }
 
-void PlayerApp::run() {
-    if (!initialized_) {
+void PlayerApp::run() 
+{
+    if (!initialized_) 
+    {
         std::cerr << "播放器未初始化" << std::endl;
         return;
     }
     
     // 注意：解封装线程已经在 init() 中启动了，所以这里不再启动
     
-    if (audio_decode_thread_) {
+    if (audio_decode_thread_) 
+    {
         audio_decode_thread_->start();
     }
     
-    if (video_decode_thread_) {
+    if (video_decode_thread_) 
+    {
         video_decode_thread_->start();
     }
     
     // 启动音频播放
-    if (audio_player_) {
+    if (audio_player_) 
+    {
         audio_player_->start();
     }
     
     // 启动视频刷新定时器
-    if (refresh_timer_) {
+    if (refresh_timer_) 
+    {
         refresh_timer_->start();
     }
     
@@ -222,32 +254,38 @@ void PlayerApp::run() {
     stop();
 }
 
-void PlayerApp::stop() {
+void PlayerApp::stop() 
+{
     state_.quit = true;
     
     // 停止所有线程
-    if (demux_thread_) {
+    if (demux_thread_) 
+    {
         demux_thread_->stop();
         demux_thread_->join();
     }
     
-    if (audio_decode_thread_) {
+    if (audio_decode_thread_) 
+    {
         audio_decode_thread_->stop();
         audio_decode_thread_->join();
     }
     
-    if (video_decode_thread_) {
+    if (video_decode_thread_) 
+    {
         video_decode_thread_->stop();
         video_decode_thread_->join();
     }
     
-    if (refresh_timer_) {
+    if (refresh_timer_) 
+    {
         refresh_timer_->stop();
         refresh_timer_->join();
     }
     
     // 停止音频播放
-    if (audio_player_) {
+    if (audio_player_) 
+    {
         audio_player_->stop();
     }
     
@@ -255,11 +293,14 @@ void PlayerApp::stop() {
     initialized_ = false;
 }
 
-void PlayerApp::handleEvents() {
+void PlayerApp::handleEvents() 
+{
     SDL_Event event;
     
-    while (!state_.quit && SDL_WaitEvent(&event)) {
-        switch (event.type) {
+    while (!state_.quit && SDL_WaitEvent(&event)) 
+    {
+        switch (event.type) 
+        {
             case SDL_QUIT:
                 state_.quit = true;
                 break;
@@ -269,20 +310,24 @@ void PlayerApp::handleEvents() {
                 break;
                 
             case SDL_WINDOWEVENT:
-                if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
-                    if (renderer_) {
+                if (event.window.event == SDL_WINDOWEVENT_RESIZED) 
+                {
+                    if (renderer_) 
+                    {
                         renderer_->handleResize(event.window.data1, event.window.data2);
                     }
                 }
                 break;
                 
             case SDL_KEYDOWN:
-                switch (event.key.keysym.sym) {
+                switch (event.key.keysym.sym) 
+                {
                     case SDLK_ESCAPE:
                         state_.quit = true;
                         break;
                     case SDLK_f:
-                        if (renderer_) {
+                        if (renderer_) 
+                        {
                             renderer_->toggleFullscreen();
                         }
                         break;
@@ -297,25 +342,30 @@ void PlayerApp::handleEvents() {
     }
 }
 
-void PlayerApp::videoRefresh() {
+void PlayerApp::videoRefresh() 
+{
     if (!renderer_) return;
     
     AVFrame* frame = nullptr;
-    if (state_.video_frame_queue.pop(frame, state_.quit, 10)) {
+    if (state_.video_frame_queue.pop(frame, state_.quit, 10)) 
+    {
         renderer_->renderFrame(frame);
         av_frame_free(&frame);
     }
 }
 
-void PlayerApp::cleanUp() {
+void PlayerApp::cleanUp() 
+{
     // 清理渲染器
-    if (renderer_) {
+    if (renderer_) 
+    {
         renderer_->clear();
         renderer_.reset();
     }
     
     // 清理音频播放器
-    if (audio_player_) {
+    if (audio_player_) 
+    {
         audio_player_.reset();
     }
     

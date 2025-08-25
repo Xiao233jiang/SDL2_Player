@@ -28,7 +28,8 @@ void PlayerState::clear()
     quit.store(true);
 
     // 先停止所有音频相关操作
-    if (audio_ctx) {
+    if (audio_ctx) 
+    {
         // 等待音频处理完成
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
@@ -47,30 +48,35 @@ void PlayerState::clear()
     wait_for_threads(2000);
     
     // 清理解码器上下文
-    if (audio_ctx) {
+    if (audio_ctx) 
+    {
         avcodec_free_context(&audio_ctx);
         audio_ctx = nullptr;
     }
     
-    if (video_ctx) {
+    if (video_ctx) 
+    {
         avcodec_free_context(&video_ctx);
         video_ctx = nullptr;
     }
     
     // 清理格式上下文
-    if (fmt_ctx) {
+    if (fmt_ctx) 
+    {
         avformat_close_input(&fmt_ctx);
         fmt_ctx = nullptr;
     }
     
     // 清理图像转换上下文
-    if (sws_ctx) {
+    if (sws_ctx) 
+    {
         sws_freeContext(sws_ctx);
         sws_ctx = nullptr;
     }
     
     // 清理音频缓冲区
-    if (audio_buf) {
+    if (audio_buf) 
+    {
         av_free(audio_buf);
         audio_buf = nullptr;
         audio_buf_size = 0;

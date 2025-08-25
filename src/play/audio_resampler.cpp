@@ -56,7 +56,8 @@ int AudioResampler::resample(AVFrame* frame, uint8_t** out_buf)
                                         frame->sample_rate,
                                         AV_ROUND_UP);
 
-    if (out_samples <= 0) {
+    if (out_samples <= 0) 
+    {
         std::cerr << "Invalid output samples: " << out_samples << std::endl;
         return -1;
     }
@@ -64,7 +65,8 @@ int AudioResampler::resample(AVFrame* frame, uint8_t** out_buf)
     int out_linesize = 0;
     int ret = av_samples_alloc(out_buf, &out_linesize, out_channels_, 
                              out_samples, out_fmt_, 0);
-    if (ret < 0) {
+    if (ret < 0) 
+    {
         std::cerr << "Failed to allocate samples: " << ret << std::endl;
         return -1;
     }
@@ -74,7 +76,8 @@ int AudioResampler::resample(AVFrame* frame, uint8_t** out_buf)
                                        out_buf, out_samples,
                                        (const uint8_t**)frame->data, frame->nb_samples);
     
-    if (converted_samples < 0) {
+    if (converted_samples < 0) 
+    {
         std::cerr << "swr_convert failed: " << converted_samples << std::endl;
         av_freep(out_buf);
         return -1;
@@ -83,7 +86,8 @@ int AudioResampler::resample(AVFrame* frame, uint8_t** out_buf)
     // 计算实际数据大小
     int data_size = av_samples_get_buffer_size(&out_linesize, out_channels_, 
                                              converted_samples, out_fmt_, 1);
-    if (data_size < 0) {
+    if (data_size < 0) 
+    {
         std::cerr << "Failed to get buffer size: " << data_size << std::endl;
         av_freep(out_buf);
         return -1;

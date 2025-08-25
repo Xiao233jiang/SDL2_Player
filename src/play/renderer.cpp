@@ -10,7 +10,8 @@ Renderer::~Renderer()
 
 bool Renderer::init(int video_width, int video_height, AVPixelFormat pix_fmt) 
 {
-    if (window_ || renderer_) {
+    if (window_ || renderer_) 
+    {
         std::cerr << "Renderer already initialized" << std::endl;
         return false;
     }
@@ -28,7 +29,8 @@ bool Renderer::init(int video_width, int video_height, AVPixelFormat pix_fmt)
         SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI
     );
     
-    if (!window_) {
+    if (!window_) 
+    {
         std::cerr << "Failed to create window: " << SDL_GetError() << std::endl;
         state_->set_error(PlayerError::VIDEO_RENDERER_FAILED, 
                          "SDL_CreateWindow failed: " + std::string(SDL_GetError()));
@@ -41,7 +43,8 @@ bool Renderer::init(int video_width, int video_height, AVPixelFormat pix_fmt)
         SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
     );
     
-    if (!renderer_) {
+    if (!renderer_) 
+    {
         std::cerr << "Failed to create renderer: " << SDL_GetError() << std::endl;
         state_->set_error(PlayerError::VIDEO_RENDERER_FAILED,
                          "SDL_CreateRenderer failed: " + std::string(SDL_GetError()));
@@ -51,7 +54,8 @@ bool Renderer::init(int video_width, int video_height, AVPixelFormat pix_fmt)
     // 创建纹理（使用视频原始尺寸）
     createTexture(video_width_, video_height_, pix_fmt_);
     
-    if (!texture_) {
+    if (!texture_) 
+    {
         std::cerr << "Failed to create texture" << std::endl;
         return false;
     }
@@ -92,7 +96,8 @@ void Renderer::createTexture(int width, int height, AVPixelFormat pix_fmt)
             SWS_BILINEAR, nullptr, nullptr, nullptr
         );
         
-        if (!sws_ctx_) {
+        if (!sws_ctx_) 
+        {
             std::cerr << "Failed to create sws context" << std::endl;
         }
     }
@@ -109,7 +114,8 @@ void Renderer::calculateDisplayRect(SDL_Rect* rect) const
     int display_width = window_width_;
     int display_height = static_cast<int>(display_width / aspect_ratio);
     
-    if (display_height > window_height_) {
+    if (display_height > window_height_) 
+    {
         display_height = window_height_;
         display_width = static_cast<int>(display_height * aspect_ratio);
     }
@@ -213,14 +219,17 @@ void Renderer::toggleFullscreen()
     if (!window_) return;
     
     Uint32 flags = SDL_GetWindowFlags(window_);
-    if (flags & SDL_WINDOW_FULLSCREEN) {
+    if (flags & SDL_WINDOW_FULLSCREEN) 
+    {
         SDL_SetWindowFullscreen(window_, 0);
         fullscreen_ = false;
         
         // 恢复窗口大小
         SDL_SetWindowSize(window_, 1280, 720);
         SDL_SetWindowPosition(window_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-    } else {
+    } 
+    else 
+    {
         SDL_SetWindowFullscreen(window_, SDL_WINDOW_FULLSCREEN_DESKTOP);
         fullscreen_ = true;
     }

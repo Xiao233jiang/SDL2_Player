@@ -15,11 +15,13 @@ AudioPlayer::~AudioPlayer()
 
 bool AudioPlayer::open() 
 {
-    if (dev_id_ > 0) {
+    if (dev_id_ > 0) 
+    {
         return false;
     }
     
-    if (!state_->audio_ctx) {
+    if (!state_->audio_ctx) 
+    {
         return false;
     }
     
@@ -33,7 +35,8 @@ bool AudioPlayer::open()
     wanted.userdata = this;
     
     dev_id_ = SDL_OpenAudioDevice(nullptr, 0, &wanted, &obtained, 0);
-    if (dev_id_ == 0) {
+    if (dev_id_ == 0) 
+    {
         std::cerr << "Failed to open audio device: " << SDL_GetError() << std::endl;
         return false;
     }
@@ -42,7 +45,8 @@ bool AudioPlayer::open()
     if (!resampler_.init(state_->audio_ctx, 
                         AV_SAMPLE_FMT_S16,
                         obtained.freq, 
-                        obtained.channels)) {
+                        obtained.channels)) 
+    {
         std::cerr << "Failed to initialize audio resampler" << std::endl;
         return false;
     }
@@ -52,7 +56,8 @@ bool AudioPlayer::open()
 
 void AudioPlayer::start() 
 {
-    if (dev_id_ > 0) {
+    if (dev_id_ > 0) 
+    {
         SDL_PauseAudioDevice(dev_id_, 0);
         paused_ = false;
     }
@@ -60,7 +65,8 @@ void AudioPlayer::start()
 
 void AudioPlayer::stop() 
 {
-    if (dev_id_ > 0) {
+    if (dev_id_ > 0) 
+    {
         SDL_PauseAudioDevice(dev_id_, 1);
         SDL_CloseAudioDevice(dev_id_);
         dev_id_ = 0;
@@ -69,7 +75,8 @@ void AudioPlayer::stop()
 
 void AudioPlayer::pause(bool paused)
 {
-    if (dev_id_ > 0) {
+    if (dev_id_ > 0) 
+    {
         SDL_PauseAudioDevice(dev_id_, paused ? 1 : 0);
         paused_ = paused;
     }
@@ -88,7 +95,8 @@ void AudioPlayer::audioCallback(void* userdata, Uint8* stream, int len)
 
 void AudioPlayer::fillAudioBuffer(Uint8* stream, int len) 
 {
-    if (paused_) {
+    if (paused_) 
+    {
         memset(stream, 0, len);
         return;
     }
@@ -96,23 +104,29 @@ void AudioPlayer::fillAudioBuffer(Uint8* stream, int len)
     int len1 = 0;
     int audio_size = 0;
 
-    while (len > 0 && !state_->quit.load()) {
-        if (audio_buf_index_ >= audio_buf_size_) {
+    while (len > 0 && !state_->quit.load()) 
+    {
+        if (audio_buf_index_ >= audio_buf_size_) 
+        {
             // 需要获取更多数据
             audio_size = audioProcessFrame(audio_buf_, sizeof(audio_buf_));
             
-            if (audio_size < 0) {
+            if (audio_size < 0) 
+            {
                 // 出错时输出静音
                 audio_buf_size_ = 1024;
                 memset(audio_buf_, 0, audio_buf_size_);
-            } else {
+            } 
+            else 
+            {
                 audio_buf_size_ = audio_size;
             }
             audio_buf_index_ = 0;
         }
         
         len1 = audio_buf_size_ - audio_buf_index_;
-        if (len1 > len) {
+        if (len1 > len) 
+        {
             len1 = len;
         }
         
@@ -150,7 +164,8 @@ int AudioPlayer::audioProcessFrame(uint8_t* audio_buf, int buf_size)
     }
 
     // 检查帧是否有有效的样本数
-    if (frame->nb_samples <= 0) {
+    if (frame->nb_samples <= 0) 
+    {
         av_frame_free(&frame);
         memset(audio_buf, 0, buf_size);
         return buf_size; // 返回静音
@@ -188,7 +203,8 @@ int AudioPlayer::audioProcessFrame(uint8_t* audio_buf, int buf_size)
     {
         // 计算音频持续时间 - 使用之前保存的样本数
         double duration = 0.0;
-        if (state_->audio_ctx->sample_rate > 0) {
+        if (state_->audio_ctx->sample_rate > 0) 
+        {
             duration = (double)nb_samples / (double)state_->audio_ctx->sample_rate;
         }
         

@@ -14,7 +14,8 @@
 /**
  * 播放器全局状态，管理解封装、解码、队列、SDL 资源等。
  */
-class PlayerState {
+class PlayerState 
+{
 public:
     // 基本状态
     std::string filename;
@@ -74,7 +75,8 @@ public:
     unsigned int audio_buf_index = 0;
 
     // 统计信息
-    struct Stats {
+    struct Stats 
+    {
         std::atomic<int64_t> audio_packets{0};
         std::atomic<int64_t> video_packets{0};
         std::atomic<int64_t> audio_frames{0};
@@ -83,7 +85,8 @@ public:
         std::atomic<int64_t> video_bytes{0};
         
         // 添加重置方法
-        void reset() {
+        void reset() 
+        {
             audio_packets.store(0);
             video_packets.store(0);
             audio_frames.store(0);
