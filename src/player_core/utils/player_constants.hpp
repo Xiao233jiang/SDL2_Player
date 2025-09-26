@@ -3,6 +3,10 @@
 #include <SDL2/SDL.h>
 #include <mutex>
 
+extern "C" {
+#include <libavformat/avformat.h>
+}
+
 /**
  * 防止 SDL 更改 main() 函数的执行。
  */
@@ -25,6 +29,14 @@ constexpr int FF_REFRESH_EVENT = SDL_USEREVENT;
 constexpr int FF_QUIT_EVENT = SDL_USEREVENT + 1;
 constexpr int FF_ERROR_EVENT = SDL_USEREVENT + 2;
 
+// Seek 相关常量 - 新增
+#ifndef AV_ERROR_MAX_STRING_SIZE
+#define AV_ERROR_MAX_STRING_SIZE 64
+#endif
+
+// ✅ 修复：统一定义 flush 包标识
+constexpr int FF_FLUSH_PACKET_STREAM_INDEX = -999;
+
 // 错误代码
 enum class PlayerError 
 {
@@ -38,11 +50,12 @@ enum class PlayerError
     STREAM_INFO_FAILED,
     AUDIO_DEVICE_FAILED,
     VIDEO_RENDERER_FAILED,
-    RESAMPLER_FAILED
+    RESAMPLER_FAILED,
+    SEEK_FAILED  // 新增
 };
 
 // 时间常量
-constexpr int DEFAULT_VIDEO_INTERVAL_MS = 40; // 25 FPS
+constexpr int DEFAULT_VIDEO_INTERVAL_MS = 16; // ~60fps，更频繁的检查
 constexpr int DEFAULT_AUDIO_BUFFER_MS = 100;
 constexpr double AV_NOSYNC_THRESHOLD = 10.0;
 

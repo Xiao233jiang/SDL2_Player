@@ -108,6 +108,19 @@ public:
     std::condition_variable threads_cv;
     std::mutex threads_mutex;
 
+    // 添加加载状态
+    std::atomic<bool> loading{false};
+
+    // Seek 相关状态
+    std::atomic<bool> seek_request{false};
+    std::atomic<int64_t> seek_pos{0};        // 目标位置 (AV_TIME_BASE 单位)
+    std::atomic<int64_t> seek_rel{0};        // 相对位置 (AV_TIME_BASE 单位)
+    std::atomic<int> seek_flags{0};          // seek 标志
+    std::mutex seek_mutex;
+    // 精准 seek 相关
+    std::atomic<bool> seeking{false};        // 是否正在 seeking
+    std::atomic<int64_t> seek_target_pts{AV_NOPTS_VALUE}; // 目标 PTS
+
     // 调试限制
     long maxFramesToDecode = 0;
     int currentFrameIndex = 0;
@@ -116,6 +129,8 @@ public:
     ~PlayerState();
     
     void clear();
+    void clearForReload(bool set_quit_flag = false); // 支持重新加载的清理
+    void resetForNewFile(); // 为新文件重置状态
     void set_error(PlayerError err, const std::string& msg = "");
     
     bool wait_for_threads(int timeout_ms = 5000);
@@ -125,6 +140,11 @@ public:
     void update_audio_clock(double pts, int data_size = 0);
     void update_video_clock(double pts);
     double get_master_clock();
+
+    // Seek 方法
+    void doSeekRelative(double seconds);
+    void doSeekAbsolute(double seconds);
+    bool isSeekRequested() const { return seek_request.load(); }
     
     // 队列状态检查
     bool audio_queue_full() const { return audio_packet_queue.size() >= MAX_AUDIO_PACKETS; }

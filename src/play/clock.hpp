@@ -36,6 +36,21 @@ public:
     double getPrePts() const { return pre_pts_.load(); }
     double getPreFrameDelay() const { return pre_frame_delay_.load(); }
 
+    // 新增：重置时钟 - 用于seek和重新加载文件
+    void reset() {
+        pts_.store(0.0);
+        last_updated_.store(currentTime());
+        pre_pts_.store(0.0);
+        pre_frame_delay_.store(0.0);
+    }
+    
+    // 新增：暂停时钟 - 用于暂停播放
+    void pause() {
+        // 记录当前的PTS，停止时间更新
+        double current_pts = get();
+        set(current_pts, currentTime());
+    }
+
 private:
     static double currentTime() 
     {

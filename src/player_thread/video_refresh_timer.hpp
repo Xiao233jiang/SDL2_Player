@@ -20,6 +20,7 @@ public:
 
 private:
     void run();
+    int calculateFrameDelay(); // 添加这个方法
 
     PlayerState* state_;
     int interval_ms_;

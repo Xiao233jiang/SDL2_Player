@@ -1,33 +1,27 @@
 #version 330 core
-out vec4 FragColor;
 
 in vec2 TexCoord;
+out vec4 FragColor;
 
 uniform sampler2D y_texture;
 uniform sampler2D u_texture;
 uniform sampler2D v_texture;
 
-// YUV到RGB的转换矩阵
-const mat3 yuv2rgb = mat3(
-    1.164383,  1.164383, 1.164383,
-    0.0,       -0.391762, 2.017232,
-    1.596027, -0.812968, 0.0
-);
-
-void main()
-{
-    // 从纹理中采样Y、U、V分量
+void main() {
+    // 获取YUV分量
     float y = texture(y_texture, TexCoord).r;
-    float u = texture(u_texture, TexCoord).r;
-    float v = texture(v_texture, TexCoord).r;
+    float u = texture(u_texture, TexCoord).r - 0.5;
+    float v = texture(v_texture, TexCoord).r - 0.5;
     
-    // 调整YUV值范围
-    y = 1.1643 * (y - 0.0625);
-    u = u - 0.5;
-    v = v - 0.5;
+    // 使用BT.601标准YUV到RGB转换矩阵
+    float r = y + 1.402 * v;
+    float g = y - 0.344136 * u - 0.714136 * v;
+    float b = y + 1.772 * u;
     
-    // 转换为RGB
-    vec3 rgb = yuv2rgb * vec3(y, u, v);
+    // 确保颜色值在[0,1]范围内
+    r = clamp(r, 0.0, 1.0);
+    g = clamp(g, 0.0, 1.0);
+    b = clamp(b, 0.0, 1.0);
     
-    FragColor = vec4(rgb, 1.0);
+    FragColor = vec4(r, g, b, 1.0);
 }

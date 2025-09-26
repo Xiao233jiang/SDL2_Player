@@ -2,6 +2,7 @@
 #include <thread>
 #include <atomic>
 #include "../player_core/player_state.hpp"
+#include "../player_core/utils/player_constants.hpp" // ✅ 包含常量定义
 
 class DemuxThread 
 {
@@ -17,6 +18,7 @@ public:
 
 private:
     void run();
+    bool handleSeekRequest();
 
     PlayerState* state_;
     std::thread thread_;

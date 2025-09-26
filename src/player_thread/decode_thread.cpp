@@ -58,7 +58,7 @@ void DecodeThread<Decoder, PacketQueue, FrameQueue>::run()
         return;
     }
 
-    bool is_audio = (name_.find("audio") != std::string::npos);
+    bool is_audio = (name_.find("Audio") != std::string::npos);
     int stream_index = is_audio ? state_->audio_stream : state_->video_stream;
     
     if (stream_index < 0) {
@@ -71,6 +71,10 @@ void DecodeThread<Decoder, PacketQueue, FrameQueue>::run()
     AVStream* stream = state_->fmt_ctx->streams[stream_index];
     int64_t frame_number = 0;
     int frame_count = 0;
+    
+    // 精准 seek 相关变量
+    bool seeking_flag = false;
+    double target_seek_time = 0.0;
 
     while (running_ && !state_->quit) 
     {
@@ -88,9 +92,46 @@ void DecodeThread<Decoder, PacketQueue, FrameQueue>::run()
             continue;
         }
 
-        // 检查是否是刷新包
-        if (pkt.data == nullptr) {
+        // ✅ 修复：正确检查 flush 包
+        if (pkt.stream_index == FF_FLUSH_PACKET_STREAM_INDEX) {
+            printf("%s: Received flush packet\n", name_.c_str());
+            
+            // 刷新解码器缓冲区
             decoder_->flush();
+            
+            // 清空帧队列
+            int cleared_frames = frame_queue_->size();
+            frame_queue_->clear();
+            printf("%s: Decoder flushed, cleared %d frames\n", name_.c_str(), cleared_frames);
+            
+            // 设置精准 seek 状态
+            if (pkt.pos != AV_NOPTS_VALUE) {
+                seeking_flag = true;
+                target_seek_time = pkt.pos / (double)AV_TIME_BASE;
+                printf("%s: Starting accurate seek to %.2fs\n", name_.c_str(), target_seek_time);
+            }
+            
+            // ✅ 重要：对于视频解码线程，完成 flush 后重置 seeking 状态
+            if (!is_audio) {
+                printf("%s: Resetting seeking state\n", name_.c_str());
+                state_->seeking.store(false);
+            }
+            
+            av_packet_unref(&pkt);
+            continue;
+        }
+
+        // ✅ 修复：检查 EOF 包
+        if (pkt.data == nullptr && pkt.size == 0) {
+            printf("%s: EOF packet received\n", name_.c_str());
+            av_packet_unref(&pkt);
+            break;
+        }
+
+        // 只处理本线程对应的流
+        if (pkt.stream_index != stream_index) {
+            printf("%s: Ignoring packet from stream %d (expected %d)\n", 
+                   name_.c_str(), pkt.stream_index, stream_index);
             av_packet_unref(&pkt);
             continue;
         }
@@ -126,44 +167,44 @@ void DecodeThread<Decoder, PacketQueue, FrameQueue>::run()
                 } 
                 else 
                 {
-                    // 生成基于帧数的时间戳
                     frame->pts = frame_number;
-                    if (is_audio) 
-                    {
+                    if (is_audio) {
                         frame_number += frame->nb_samples;
-                    } 
-                    else 
-                    {
+                    } else {
                         frame_number++;
                     }
                 }
             }
             
-            // 特别处理音频帧的时间戳
-            if (is_audio) 
-            {
-                // 计算时间戳（以秒为单位）
-                double pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : 
-                            frame->pts * av_q2d(decoder_->getCodecCtx()->time_base);
+            // ✅ 改进：精准 seek 处理
+            if (seeking_flag) {
+                double frame_time_seconds = 0.0;
                 
-                // 对于音频帧，我们需要确保时间戳是有效的
-                if (std::isnan(pts)) 
-                {
-                    // 如果没有有效时间戳，使用基于样本数的估计
-                    pts = frame_number * av_q2d(decoder_->getCodecCtx()->time_base);
+                if (is_audio) {
+                    frame_time_seconds = frame->pts * av_q2d(decoder_->getCodecCtx()->time_base);
+                } else {
+                    frame_time_seconds = frame->pts * av_q2d(stream->time_base);
                 }
                 
-                // 更新时间戳（转换为解码器时间基）
-                frame->pts = static_cast<int64_t>(pts / av_q2d(decoder_->getCodecCtx()->time_base));
+                // 检查是否到达目标位置
+                double time_diff = frame_time_seconds - target_seek_time;
                 
-                // 更新帧计数器
-                frame_number += frame->nb_samples;
+                if (time_diff < -0.5) { // 如果帧时间比目标时间早0.5秒以上，丢弃
+                    printf("%s: Dropping frame at %.2fs (target: %.2fs, diff: %.2fs)\n", 
+                           name_.c_str(), frame_time_seconds, target_seek_time, time_diff);
+                    av_frame_unref(frame);
+                    continue;
+                } else {
+                    // 到达目标位置附近，停止 seeking
+                    seeking_flag = false;
+                    printf("%s: Seek completed at %.2fs (target: %.2fs, diff: %.2fs)\n", 
+                           name_.c_str(), frame_time_seconds, target_seek_time, time_diff);
+                }
             }
-            else 
-            {
-                // 对于视频帧，保存PTS到opaque字段
+            
+            // 对于视频帧，保存PTS到opaque字段
+            if (!is_audio) {
                 double* pts_ptr = (double*)av_malloc(sizeof(double));
-                AVStream* stream = state_->fmt_ctx->streams[state_->video_stream];
                 *pts_ptr = (frame->pts == AV_NOPTS_VALUE) ? NAN : 
                         frame->pts * av_q2d(stream->time_base);
                 frame->opaque = pts_ptr;
@@ -175,18 +216,15 @@ void DecodeThread<Decoder, PacketQueue, FrameQueue>::run()
             {
                 if (!frame_queue_->push(cloned_frame, true, 100)) 
                 {
-                    std::cout << name_ << ": Frame queue full, dropping frame" << std::endl;
+                    // 队列满了，丢弃帧
                     av_frame_free(&cloned_frame);
                 } 
                 else 
                 {
                     // 更新统计信息
-                    if (is_audio) 
-                    {
+                    if (is_audio) {
                         state_->stats.audio_frames++;
-                    } 
-                    else 
-                    {
+                    } else {
                         state_->stats.video_frames++;
                     }
                 }
@@ -198,7 +236,7 @@ void DecodeThread<Decoder, PacketQueue, FrameQueue>::run()
         av_packet_unref(&pkt);
     }
 
-    std::cout << name_ << ": Finished after decoding " << frame_count << " frames" << std::endl;
+    printf("%s: Finished after decoding %d frames\n", name_.c_str(), frame_count);
     av_frame_free(&frame);
     state_->thread_finished();
 }

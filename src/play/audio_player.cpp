@@ -201,18 +201,22 @@ int AudioPlayer::audioProcessFrame(uint8_t* audio_buf, int buf_size)
     // 更新时间戳和统计信息
     if (!std::isnan(pts)) 
     {
-        // 计算音频持续时间 - 使用之前保存的样本数
+        // 计算音频持续时间 - 使用更精确的计算
         double duration = 0.0;
         if (state_->audio_ctx->sample_rate > 0) 
         {
             duration = (double)nb_samples / (double)state_->audio_ctx->sample_rate;
         }
         
-        // 更新音频时钟 - 使用 Clock 类
-        state_->audio_clock.set(pts + duration);
+        // 更新音频时钟 - 使用当前播放位置的时间戳
+        double current_pts = pts + duration;
+        state_->audio_clock.set(current_pts);
+        
         // 更新统计信息
         state_->stats.audio_bytes.fetch_add(data_size);
+        
+        // std::cout << "Audio PTS: " << current_pts << "s" << std::endl;
     }
-
+    
     return data_size;
 }

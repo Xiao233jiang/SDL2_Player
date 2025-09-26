@@ -5,7 +5,14 @@ int main(int argc, char* argv[])
 {
     try 
     {
-        PlayerApp app("data/video.mp4");
+        std::string filename;
+        
+        // 如果命令行提供了文件名则使用，否则空启动
+        if (argc > 1) {
+            filename = argv[1];
+        }
+        
+        PlayerApp app(filename); // 支持空字符串启动
         if (!app.init()) 
         {
             std::cerr << "Failed to initialize player" << std::endl;

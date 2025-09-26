@@ -27,6 +27,11 @@ set(GLAD_SRC "${GLAD_PATH}/src/glad.c")
 set(GLM_PATH "${CMAKE_SOURCE_DIR}/third_party/glm")
 include_directories(${GLM_PATH})
 
+# 设置 ImGUI 路径
+set(IMGUI_PATH "${CMAKE_SOURCE_DIR}/third_party/imgui/imgui-docking")
+include_directories(${IMGUI_PATH})
+file(GLOB_RECURSE IMGUI_SRC "${IMGUI_PATH}/imgui/*.cpp")
+
 # 设置 stb_image 路径
 set(STB_PATH "${CMAKE_SOURCE_DIR}/third_party/stb")
 include_directories(${STB_PATH})
@@ -89,9 +94,25 @@ set(SOURCES
     "${CMAKE_SOURCE_DIR}/src/player_core/utils/timestamp_utils.hpp"
     "${CMAKE_SOURCE_DIR}/src/player_core/utils/timestamp_utils.cpp"
 
+    "${CMAKE_SOURCE_DIR}/src/ui/gui_panel.hpp"
+    "${CMAKE_SOURCE_DIR}/src/ui/gui_manager.hpp"
+    "${CMAKE_SOURCE_DIR}/src/ui/gui_manager.cpp"
+    "${CMAKE_SOURCE_DIR}/src/ui/ui_layer.hpp"
+    "${CMAKE_SOURCE_DIR}/src/ui/ui_layer.cpp"
+
+    "${CMAKE_SOURCE_DIR}/src/ui/panels/main_panel.hpp"
+    "${CMAKE_SOURCE_DIR}/src/ui/panels/main_panel.cpp"
+    "${CMAKE_SOURCE_DIR}/src/ui/panels/video_panel.hpp"
+    "${CMAKE_SOURCE_DIR}/src/ui/panels/video_panel.cpp"
+    "${CMAKE_SOURCE_DIR}/src/ui/panels/control_panel.hpp"
+    "${CMAKE_SOURCE_DIR}/src/ui/panels/control_panel.cpp"
+
     "${CMAKE_SOURCE_DIR}/src/ffmpeg_utils/ffmpeg_headers.hpp"
+
+    "${CMAKE_SOURCE_DIR}/src/utils/file_dialog.hpp"
+    "${CMAKE_SOURCE_DIR}/src/utils/file_dialog.cpp"
 )
-add_executable(main ${SOURCES} ${GLAD_SRC} ${KISSFFT_SRC})
+add_executable(main ${SOURCES} ${GLAD_SRC} ${IMGUI_SRC} ${KISSFFT_SRC})
 
 # 链接 FFmpeg 静态库
 target_link_libraries(main PRIVATE
@@ -116,6 +137,7 @@ if(WIN32)
 target_link_libraries(main PRIVATE
         opengl32
         imm32
+        comdlg32  # 文件对话框
         version
         setupapi
         winmm
