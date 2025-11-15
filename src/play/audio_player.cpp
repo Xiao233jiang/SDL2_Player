@@ -95,6 +95,9 @@ void AudioPlayer::audioCallback(void* userdata, Uint8* stream, int len)
 
 void AudioPlayer::fillAudioBuffer(Uint8* stream, int len) 
 {
+    // 同步全局暂停状态
+    paused_ = state_->paused.load();
+
     if (paused_) 
     {
         memset(stream, 0, len);
@@ -108,12 +111,9 @@ void AudioPlayer::fillAudioBuffer(Uint8* stream, int len)
     {
         if (audio_buf_index_ >= audio_buf_size_) 
         {
-            // 需要获取更多数据
             audio_size = audioProcessFrame(audio_buf_, sizeof(audio_buf_));
-            
             if (audio_size < 0) 
             {
-                // 出错时输出静音
                 audio_buf_size_ = 1024;
                 memset(audio_buf_, 0, audio_buf_size_);
             } 
@@ -129,8 +129,21 @@ void AudioPlayer::fillAudioBuffer(Uint8* stream, int len)
         {
             len1 = len;
         }
-        
-        memcpy(stream, audio_buf_ + audio_buf_index_, len1);
+
+        // --- 音量调节 ---
+        float volume = state_->volume.load();
+        if (volume < 0.001f) volume = 0.0f; // 静音
+
+        // 假设为 AUDIO_S16SYS 格式
+        int16_t* src = (int16_t*)(audio_buf_ + audio_buf_index_);
+        int16_t* dst = (int16_t*)stream;
+        int samples = len1 / 2; // 2字节每采样
+
+        for (int i = 0; i < samples; ++i)
+        {
+            dst[i] = (int16_t)(src[i] * volume);
+        }
+
         len -= len1;
         stream += len1;
         audio_buf_index_ += len1;

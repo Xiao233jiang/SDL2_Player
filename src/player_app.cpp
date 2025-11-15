@@ -408,6 +408,12 @@ void PlayerApp::handleKeyPress(SDL_Keycode key) {
 void PlayerApp::videoRefresh()
 {
     if (!renderer_) return;
+
+    // 暂停时不渲染新帧
+    if (state_.paused.load()) {
+        renderer_->renderUI(); // 只刷新UI，不渲染视频
+        return;
+    }
     
     AVFrame* frame = nullptr;
     if (!state_.video_frame_queue.try_pop(frame) || !frame) {

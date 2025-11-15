@@ -20,6 +20,8 @@ public:
     // 基本状态
     std::string filename;
     std::atomic<bool> quit{false};
+    std::atomic<bool> paused{false};    // 暂停状态
+    std::atomic<float> volume{1.0f};    // 全局音量（0.0~1.0）
     std::atomic<PlayerError> error{PlayerError::NONE};
     std::string error_message;
 

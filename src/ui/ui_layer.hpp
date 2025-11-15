@@ -16,7 +16,8 @@
 class PlayerState;
 class OpenGLRenderer;
 
-class UiLayer {
+class UiLayer 
+{
 public:
     UiLayer(OpenGLRenderer* renderer);
     ~UiLayer();
@@ -37,15 +38,15 @@ public:
     
     void SetVideoSize(int width, int height);
     void SetVideoTexture(GLuint texture);
-    void UpdateVideoInfo(GLuint texture, int width, int height); // 新增：一次性更新
-    void ClearVideoInfo(); // 新增：清除视频信息
+    void UpdateVideoInfo(GLuint texture, int width, int height); // 一次性更新
+    void ClearVideoInfo(); // 清除视频信息
 
 private:
-    void RegisterPanels();
-    void SetupCleanStyle();
-    void CreateMainLayout();
-    void RenderMenuBar();
-    void RenderDialogs();
+    void RegisterPanels();          // 注册所有面板
+    void SetupCleanStyle();         // 设置简洁风格
+    void CreateMainLayout();        // 创建主界面布局
+    void RenderMenuBar();           // 渲染菜单栏
+    void RenderDialogs();           // 渲染对话框
     
     SDL_Window* m_window = nullptr;
     OpenGLRenderer* m_renderer = nullptr;

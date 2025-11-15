@@ -2,8 +2,10 @@ build/
 msvc-build/
 .vscode/
 .cache/
+.idea/
 third_party/
 data/
 other-proj/
 learn-src/
 DOCX/
+cmake-build-debug/

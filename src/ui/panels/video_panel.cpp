@@ -9,10 +9,6 @@ void VideoPanel::SetVideoInfo(GLuint texture, int width, int height) {
     m_videoWidth = width;
     m_videoHeight = height;
     m_hasVideoData = (texture != 0 && width > 0 && height > 0);
-    
-    if (m_hasVideoData) {
-        printf("VideoPanel: Set video info - Texture: %u, Size: %dx%d\n", texture, width, height);
-    }
 }
 
 void VideoPanel::SetVideoTexture(GLuint texture) {
